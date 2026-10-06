@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { SearchBar } from './components/SearchBar';
 import { PriceOverviewCard } from './components/PriceOverviewCard';
@@ -11,13 +11,15 @@ import { SpecsTable } from './components/SpecsTable';
 import { VariantsList } from './components/VariantsList';
 import { SourcesList } from './components/SourcesList';
 import { AssumptionsBanner } from './components/AssumptionsBanner';
+import { QueryUnderstandingCard } from './components/QueryUnderstandingCard';
+import { SearchHistory } from './components/SearchHistory';
 import { LoadingSkeleton } from './components/LoadingSkeleton';
 import { EmptyState } from './components/EmptyState';
 import { ErrorState } from './components/ErrorState';
 import { MethodologyModal } from './components/MethodologyModal';
 import { ProductResearchResult } from './types/product';
-import { getMockResearchResult } from './data/mockResults';
-import { Search, Sparkles, Shield, ArrowUpRight } from 'lucide-react';
+import { searchProductApi, ClientValidationError, ServerApiError } from './api/searchClient';
+import { Shield } from 'lucide-react';
 
 export default function App() {
   const [activeQuery, setActiveQuery] = useState<string>('');
@@ -26,40 +28,48 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState<boolean>(false);
 
-  // Search handler that simulates network delay and processes query
-  const handleSearch = (query: string) => {
-    const trimmed = query.trim();
-    if (!trimmed) return;
+  // Real search request flow: validates input, sends to server-side endpoint, handles errors
+  const handleSearch = useCallback(
+    async (queryToSearch: string) => {
+      const trimmed = queryToSearch ? queryToSearch.trim() : '';
+      if (!trimmed) {
+        setErrorMessage('Search query cannot be empty. Please enter a product or material.');
+        return;
+      }
 
-    setActiveQuery(trimmed);
-    setIsLoading(true);
-    setErrorMessage(null);
+      // If already loading this exact query, prevent duplicate submission
+      if (isLoading && activeQuery === trimmed) {
+        return;
+      }
 
-    // Simulate search & extraction pipeline delay (800ms)
-    // In next phase this will call fetch('/api/search', { ... })
-    setTimeout(() => {
+      setActiveQuery(trimmed);
+      setIsLoading(true);
+      setErrorMessage(null);
+
       try {
-        // Special case to simulate error state if user tests "simulate-error"
-        if (trimmed.toLowerCase() === 'simulate-error') {
-          throw new Error('No supplier catalogs could be reached. Please check query parameters.');
-        }
-
-        const data = getMockResearchResult(trimmed);
+        const data = await searchProductApi(trimmed);
         setResult(data);
-        setIsLoading(false);
+        setErrorMessage(null);
       } catch (err: any) {
-        setErrorMessage(err?.message || 'Failed to research product pricing.');
+        console.error('Search failed:', err);
+        const userMessage =
+          err instanceof ClientValidationError || err instanceof ServerApiError
+            ? err.message
+            : 'An unexpected network error occurred while researching this product.';
+        setErrorMessage(userMessage);
+      } finally {
         setIsLoading(false);
       }
-    }, 750);
-  };
+    },
+    [isLoading, activeQuery]
+  );
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setActiveQuery('');
     setResult(null);
     setErrorMessage(null);
     setIsLoading(false);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-50/70 text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
@@ -75,7 +85,7 @@ export default function App() {
           {/* Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-semibold mb-4 border border-zinc-200">
             <Shield className="w-3.5 h-3.5 text-zinc-600" />
-            <span>Grounded Market Intelligence • Zero Unsupported Hallucinations</span>
+            <span>Server-Side Request Flow • Private Keys Secured</span>
           </div>
 
           {/* Main Headline */}
@@ -89,12 +99,18 @@ export default function App() {
             Get instant market price estimates, verified sources, and technical specifications.
           </p>
 
-          {/* Large Search Input */}
+          {/* Large Search Input with Live Validation */}
           <div className="mt-8">
             <SearchBar
               initialQuery={activeQuery}
               isLoading={isLoading}
               onSearch={handleSearch}
+            />
+
+            {/* Recent Inquiries Persisted Drawer */}
+            <SearchHistory
+              activeQuery={activeQuery}
+              onSelectSearch={handleSearch}
             />
           </div>
         </div>
@@ -145,6 +161,8 @@ export default function App() {
               productName={result.productName}
               category={result.category}
               shortDescription={result.shortDescription}
+              brand={result.brand}
+              model={result.model}
               estimatedPrice={result.estimatedPrice}
               priceRange={result.priceRange}
               currency={result.currency}
@@ -152,7 +170,12 @@ export default function App() {
               confidenceLevel={result.confidenceLevel}
               confidenceReason={result.confidenceReason}
               researchedAt={result.researchedAt}
+              sourcesCount={result.sourcesCount}
+              isPriceUnavailable={result.isPriceUnavailable}
             />
+
+            {/* AI Query Interpretation & Search Plan Card */}
+            <QueryUnderstandingCard understanding={result.queryUnderstanding} />
 
             {/* Two-Column Grid: Specifications & Variants */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -192,9 +215,9 @@ export default function App() {
               Methodology
             </button>
             <span>•</span>
-            <span>No Image Upload Required</span>
+            <span>No Image Upload</span>
             <span>•</span>
-            <span>Live Web Grounding</span>
+            <span>Provider-Agnostic Backend</span>
           </div>
         </div>
       </footer>

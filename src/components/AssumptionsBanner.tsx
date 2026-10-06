@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, HelpCircle } from 'lucide-react';
+import { AlertCircle, HelpCircle, ShieldAlert, AlertTriangle } from 'lucide-react';
 
 interface AssumptionsBannerProps {
   assumptions: string[];
@@ -20,16 +20,16 @@ export const AssumptionsBanner: React.FC<AssumptionsBannerProps> = ({
   return (
     <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-6 sm:p-7 text-sm">
       <div className="flex items-center gap-2 mb-4 text-amber-900 font-bold text-base">
-        <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0" />
-        <h3>Commercial Assumptions & Market Uncertainty Disclosure</h3>
+        <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0" />
+        <h3>Commercial Assumptions, Uncertainty & Pricing Limitations</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-zinc-700">
-        {/* Baseline Assumptions */}
+        {/* Baseline Limitations & Assumptions */}
         {assumptions && assumptions.length > 0 && (
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
-              <span>Baseline Procurement Assumptions</span>
+              <span>Procurement Assumptions & Limitations</span>
             </h4>
             <ul className="space-y-1.5 list-disc list-inside text-xs sm:text-sm text-zinc-700">
               {assumptions.map((item, idx) => (
@@ -41,11 +41,11 @@ export const AssumptionsBanner: React.FC<AssumptionsBannerProps> = ({
           </div>
         )}
 
-        {/* Factors of Uncertainty */}
+        {/* Factors of Uncertainty & Variance */}
         {uncertaintyNotes && uncertaintyNotes.length > 0 && (
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
-              <span>Factors of Market Variance</span>
+              <span>Identification Ambiguity & Market Variance</span>
             </h4>
             <ul className="space-y-1.5 list-disc list-inside text-xs sm:text-sm text-zinc-700">
               {uncertaintyNotes.map((item, idx) => (
@@ -58,11 +58,14 @@ export const AssumptionsBanner: React.FC<AssumptionsBannerProps> = ({
         )}
       </div>
 
-      <div className="mt-5 pt-4 border-t border-amber-200/60 text-xs text-amber-800 flex items-center gap-2">
-        <HelpCircle className="w-4 h-4 flex-shrink-0" />
-        <span>
-          Prices provided represent indicative market benchmarks derived from public data and do not constitute a binding quote or purchase offer.
-        </span>
+      {/* Clear Price-Change Disclaimer */}
+      <div className="mt-5 pt-4 border-t border-amber-200/70 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-medium">
+          <HelpCircle className="w-4 h-4 flex-shrink-0 text-amber-700" />
+          <span>
+            <strong>Price-Change Disclaimer:</strong> Retrieved prices reflect public listings at retrieval time. Supplier availability, wholesale minimum order quantities, and commodity shifts may alter prices without notice.
+          </span>
+        </div>
       </div>
     </div>
   );

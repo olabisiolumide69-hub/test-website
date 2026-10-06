@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Loader2, ArrowRight } from 'lucide-react';
+import { Search, X, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
+import { CLIENT_MAX_QUERY_LENGTH } from '../api/searchClient';
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -24,31 +25,62 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   suggestions = DEFAULT_SUGGESTIONS,
 }) => {
   const [query, setQuery] = useState(initialQuery);
+  const [validationHint, setValidationHint] = useState<string | null>(null);
 
   useEffect(() => {
     setQuery(initialQuery);
   }, [initialQuery]);
 
+  const trimmed = query.trim();
+  const isOverLimit = query.length > CLIENT_MAX_QUERY_LENGTH;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed || isLoading) return;
+    if (isLoading) return;
+
+    if (!trimmed) {
+      setValidationHint('Please enter a product, material, or item name.');
+      return;
+    }
+
+    if (isOverLimit) {
+      setValidationHint(`Query cannot exceed ${CLIENT_MAX_QUERY_LENGTH} characters.`);
+      return;
+    }
+
+    setValidationHint(null);
     onSearch(trimmed);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    if (isLoading) return;
     setQuery(suggestion);
+    setValidationHint(null);
     onSearch(suggestion);
   };
 
   const handleClear = () => {
     setQuery('');
+    setValidationHint(null);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    if (validationHint) {
+      setValidationHint(null);
+    }
   };
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} className="relative group">
-        <div className="relative flex items-center shadow-lg hover:shadow-xl focus-within:shadow-xl transition-all duration-200 rounded-2xl bg-white border border-zinc-200 focus-within:border-zinc-900 overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative group" noValidate>
+        <div
+          className={`relative flex items-center shadow-lg hover:shadow-xl focus-within:shadow-xl transition-all duration-200 rounded-2xl bg-white border ${
+            isOverLimit
+              ? 'border-rose-400 focus-within:border-rose-500'
+              : 'border-zinc-200 focus-within:border-zinc-900'
+          } overflow-hidden`}
+        >
           <div className="pl-5 pr-3 text-zinc-400 group-focus-within:text-zinc-900 transition-colors">
             <Search className="w-6 h-6" aria-hidden="true" />
           </div>
@@ -56,11 +88,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={handleInputChange}
             disabled={isLoading}
             placeholder="Search material, product, or physical object (e.g., 12mm plywood, Samsung A55)..."
             aria-label="Search material, product, or item"
-            className="w-full py-4 sm:py-5 pr-24 sm:pr-32 text-base sm:text-lg bg-transparent text-zinc-900 placeholder-zinc-400 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed font-normal"
+            className="w-full py-4 sm:py-5 pr-28 sm:pr-36 text-base sm:text-lg bg-transparent text-zinc-900 placeholder-zinc-400 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed font-normal"
           />
 
           <div className="absolute right-2.5 flex items-center gap-1.5">
@@ -77,7 +109,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
             <button
               type="submit"
-              disabled={!query.trim() || isLoading}
+              disabled={isLoading || isOverLimit}
               aria-label="Execute search"
               className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 sm:py-3 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-200 text-white disabled:text-zinc-400 font-medium text-sm rounded-xl transition-colors shadow-sm disabled:cursor-not-allowed"
             >
@@ -95,10 +127,32 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Character Count & Validation Warnings */}
+        <div className="flex items-center justify-between px-2 pt-2 text-xs">
+          {validationHint ? (
+            <div className="flex items-center gap-1 text-rose-600 font-medium animate-in fade-in duration-150">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>{validationHint}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+
+          {query.length > 140 && (
+            <span
+              className={`font-mono text-[11px] ${
+                isOverLimit ? 'text-rose-600 font-bold' : 'text-zinc-400'
+              }`}
+            >
+              {query.length} / {CLIENT_MAX_QUERY_LENGTH} chars
+            </span>
+          )}
+        </div>
       </form>
 
       {/* Suggestion Chips */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider mr-1">
           Try Examples:
         </span>
