@@ -1,0 +1,6 @@
+{
+  "name": "SpecPrice - Material & Product Market Intelligence",
+  "description": "AI-grounded live market price research and specification analysis for materials, industrial goods, and physical products.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
