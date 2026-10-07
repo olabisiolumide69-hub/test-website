@@ -48,7 +48,12 @@ class SearchDatabase {
   private db: DatabaseSync;
 
   constructor() {
-    this.db = new DatabaseSync(DB_PATH);
+    try {
+      this.db = new DatabaseSync(DB_PATH);
+    } catch (err) {
+      console.warn('Could not open file database at DB_PATH, falling back to in-memory database:', err);
+      this.db = new DatabaseSync(':memory:');
+    }
     this.initSchema();
   }
 

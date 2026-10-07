@@ -233,8 +233,8 @@ async function startServer() {
     });
   }
 
-  app.listen(port, () => {
-    console.log(`SpecPrice server running on http://localhost:${port}`);
+  app.listen(Number(port), '0.0.0.0', () => {
+    console.log(`SpecPrice server running on http://0.0.0.0:${port}`);
   });
 }
 
