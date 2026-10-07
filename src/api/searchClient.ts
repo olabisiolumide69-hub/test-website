@@ -48,12 +48,12 @@ export async function searchProductApi(rawQuery: string): Promise<ProductResearc
     );
   }
 
-  // 3. Prevent accidental duplicate submissions within 1.5 seconds if query is identical
-  const now = Date.now();
-  if (lastSubmittedQuery === trimmed && now - lastSubmittedTimestamp < 1500) {
-    throw new ClientValidationError('A search for this item was just submitted. Please wait a moment.');
+  // 3. Prevent duplicate submission if the same search is already actively running
+  if (activeAbortController && lastSubmittedQuery === trimmed) {
+    throw new ClientValidationError('A search for this item is already in progress.');
   }
 
+  const now = Date.now();
   lastSubmittedQuery = trimmed;
   lastSubmittedTimestamp = now;
 

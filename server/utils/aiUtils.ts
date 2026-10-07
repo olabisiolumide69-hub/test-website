@@ -25,11 +25,17 @@ export async function executeWithTimeoutAndRetry<T>(
       return result;
     } catch (err: any) {
       attempt++;
+      const isQuotaExhausted =
+        err?.message?.includes('RESOURCE_EXHAUSTED') ||
+        err?.message?.includes('quota');
+
+      if (isQuotaExhausted) {
+        throw err;
+      }
+
       const isTransient =
         err?.message?.includes('503') ||
-        err?.message?.includes('429') ||
         err?.message?.includes('UNAVAILABLE') ||
-        err?.message?.includes('RESOURCE_EXHAUSTED') ||
         err?.message?.includes('timed out');
 
       if (attempt > maxRetries || !isTransient) {

@@ -89,23 +89,29 @@ class BaselineSearchProvider implements ProductSearchProvider {
     }
 
     const finalCurrency = pricingResult.currency || baseResult.currency;
-    const finalEstimatedPrice = pricingResult.estimatedPrice;
+    const finalEstimatedPrice = pricingResult.estimatedPrice ?? baseResult.estimatedPrice;
     const isPriceUnavailable = finalEstimatedPrice === null;
 
     const finalPriceRange = {
-      min: pricingResult.minPrice,
-      max: pricingResult.maxPrice,
+      min: pricingResult.minPrice ?? baseResult.priceRange.min,
+      max: pricingResult.maxPrice ?? baseResult.priceRange.max,
       median: finalEstimatedPrice,
     };
 
-    const finalConfidence = pricingResult.confidence.toUpperCase() as any;
+    const finalConfidence = pricingResult.estimatedPrice !== null
+      ? (pricingResult.confidence.toUpperCase() as any)
+      : baseResult.confidenceLevel;
+    const finalConfidenceReason = pricingResult.estimatedPrice !== null
+      ? pricingResult.methodology
+      : baseResult.confidenceReason;
+
     const combinedLimitations = Array.from(
       new Set([...baseResult.assumptions, ...pricingResult.limitations])
     );
 
     const validPriceSourcesCount = pricingResult.priceObservations.filter(
       (o) => !o.isOutlier && o.normalizedPrice > 0
-    ).length;
+    ).length || baseResult.sourcePrices.length;
 
     const finalResult: ProductResearchResult = {
       ...baseResult,
@@ -124,7 +130,7 @@ class BaselineSearchProvider implements ProductSearchProvider {
       estimatedPrice: finalEstimatedPrice,
       priceRange: finalPriceRange,
       confidenceLevel: finalConfidence,
-      confidenceReason: pricingResult.methodology,
+      confidenceReason: finalConfidenceReason,
       assumptions: combinedLimitations,
       variants: understanding.possible_variants.length > 0
         ? understanding.possible_variants.map(v => ({ name: v, detail: 'Identified variant specification' }))
